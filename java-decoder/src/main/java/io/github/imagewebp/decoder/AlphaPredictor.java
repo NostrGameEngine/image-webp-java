@@ -6,13 +6,18 @@ final class AlphaPredictor {
 
     static int predict(int x, int y, int width, int filteringMethod, byte[] rgba) {
         // filteringMethod: 0 None, 1 Horizontal, 2 Vertical, 3 Gradient
-        return switch (filteringMethod) {
-            case 0 -> 0;
-            case 1 -> horizontal(x, y, width, rgba);
-            case 2 -> vertical(x, y, width, rgba);
-            case 3 -> gradient(x, y, width, rgba);
-            default -> 0;
-        };
+        switch (filteringMethod) {
+            case 0:
+                return 0;
+            case 1:
+                return horizontal(x, y, width, rgba);
+            case 2:
+                return vertical(x, y, width, rgba);
+            case 3:
+                return gradient(x, y, width, rgba);
+            default:
+                return 0;
+        }
     }
 
     private static int horizontal(int x, int y, int width, byte[] rgba) {

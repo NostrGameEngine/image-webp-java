@@ -94,5 +94,17 @@ final class ReferenceFixturesTest {
         }
     }
 
-    private record PngData(int width, int height, int channels, byte[] pixels) {}
+    private static final class PngData {
+        final int width;
+        final int height;
+        final int channels;
+        final byte[] pixels;
+
+        PngData(int width, int height, int channels, byte[] pixels) {
+            this.width = width;
+            this.height = height;
+            this.channels = channels;
+            this.pixels = pixels;
+        }
+    }
 }

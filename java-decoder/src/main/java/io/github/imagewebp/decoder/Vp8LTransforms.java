@@ -46,23 +46,50 @@ final class Vp8LTransforms {
                 int end = (y * width + endX) * 4;
 
                 switch (predictor) {
-                    case 0 -> applyPredictor0(imageData, start, end);
-                    case 1 -> applyPredictor1(imageData, start, end, width);
-                    case 2 -> applyPredictor2(imageData, start, end, width);
-                    case 3 -> applyPredictor3(imageData, start, end, width);
-                    case 4 -> applyPredictor4(imageData, start, end, width);
-                    case 5 -> applyPredictor5(imageData, start, end, width);
-                    case 6 -> applyPredictor6(imageData, start, end, width);
-                    case 7 -> applyPredictor7(imageData, start, end, width);
-                    case 8 -> applyPredictor8(imageData, start, end, width);
-                    case 9 -> applyPredictor9(imageData, start, end, width);
-                    case 10 -> applyPredictor10(imageData, start, end, width);
-                    case 11 -> applyPredictor11(imageData, start, end, width);
-                    case 12 -> applyPredictor12(imageData, start, end, width);
-                    case 13 -> applyPredictor13(imageData, start, end, width);
-                    default -> {
-                        // ignore
-                    }
+                    case 0:
+                        applyPredictor0(imageData, start, end);
+                        break;
+                    case 1:
+                        applyPredictor1(imageData, start, end, width);
+                        break;
+                    case 2:
+                        applyPredictor2(imageData, start, end, width);
+                        break;
+                    case 3:
+                        applyPredictor3(imageData, start, end, width);
+                        break;
+                    case 4:
+                        applyPredictor4(imageData, start, end, width);
+                        break;
+                    case 5:
+                        applyPredictor5(imageData, start, end, width);
+                        break;
+                    case 6:
+                        applyPredictor6(imageData, start, end, width);
+                        break;
+                    case 7:
+                        applyPredictor7(imageData, start, end, width);
+                        break;
+                    case 8:
+                        applyPredictor8(imageData, start, end, width);
+                        break;
+                    case 9:
+                        applyPredictor9(imageData, start, end, width);
+                        break;
+                    case 10:
+                        applyPredictor10(imageData, start, end, width);
+                        break;
+                    case 11:
+                        applyPredictor11(imageData, start, end, width);
+                        break;
+                    case 12:
+                        applyPredictor12(imageData, start, end, width);
+                        break;
+                    case 13:
+                        applyPredictor13(imageData, start, end, width);
+                        break;
+                    default:
+                        break;
                 }
             }
         }

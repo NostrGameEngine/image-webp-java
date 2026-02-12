@@ -99,24 +99,31 @@ final class Vp8LDecoder {
             order[orderLen++] = transformType;
 
             switch (transformType) {
-                case 0 -> {
+                case 0:
+                {
                     int sizeBits = br.readBits(3) + 2;
                     int blockXsize = Vp8LTransforms.subsampleSize(transformedWidth, sizeBits);
                     int blockYsize = Vp8LTransforms.subsampleSize(height, sizeBits);
                     byte[] predictorData = new byte[blockXsize * blockYsize * 4];
                     decodeImageStream(br, blockXsize, blockYsize, false, predictorData);
                     transforms[transformType] = new PredictorTransform(sizeBits, predictorData);
+                    break;
                 }
-                case 1 -> {
+                case 1:
+                {
                     int sizeBits = br.readBits(3) + 2;
                     int blockXsize = Vp8LTransforms.subsampleSize(transformedWidth, sizeBits);
                     int blockYsize = Vp8LTransforms.subsampleSize(height, sizeBits);
                     byte[] transformData = new byte[blockXsize * blockYsize * 4];
                     decodeImageStream(br, blockXsize, blockYsize, false, transformData);
                     transforms[transformType] = new ColorTransform(sizeBits, transformData);
+                    break;
                 }
-                case 2 -> transforms[transformType] = new SubtractGreenTransform();
-                case 3 -> {
+                case 2:
+                    transforms[transformType] = new SubtractGreenTransform();
+                    break;
+                case 3:
+                {
                     int tableSize = br.readBits(8) + 1;
                     byte[] colorMap = new byte[tableSize * 4];
                     decodeImageStream(br, tableSize, 1, false, colorMap);
@@ -134,8 +141,10 @@ final class Vp8LDecoder {
                     transformedWidth = Vp8LTransforms.subsampleSize(transformedWidth, bits);
                     adjustColorMap(colorMap);
                     transforms[transformType] = new ColorIndexingTransform(tableSize, colorMap);
+                    break;
                 }
-                default -> throw new WebPDecodeException("Transform error");
+                default:
+                    throw new WebPDecodeException("Transform error");
             }
         }
 
@@ -146,13 +155,16 @@ final class Vp8LDecoder {
         int curWidth = transformedWidth;
         for (int i = orderLen - 1; i >= 0; i--) {
             Transform t = transforms[order[i]];
-            if (t instanceof PredictorTransform pt) {
+            if (t instanceof PredictorTransform) {
+                PredictorTransform pt = (PredictorTransform) t;
                 Vp8LTransforms.applyPredictorTransform(outRgba, curWidth, height, pt.sizeBits, pt.data);
-            } else if (t instanceof ColorTransform ct) {
+            } else if (t instanceof ColorTransform) {
+                ColorTransform ct = (ColorTransform) t;
                 Vp8LTransforms.applyColorTransform(outRgba, curWidth, height, ct.sizeBits, ct.data);
             } else if (t instanceof SubtractGreenTransform) {
                 Vp8LTransforms.applySubtractGreenTransform(outRgba, imageSize);
-            } else if (t instanceof ColorIndexingTransform cit) {
+            } else if (t instanceof ColorIndexingTransform) {
+                ColorIndexingTransform cit = (ColorIndexingTransform) t;
                 curWidth = width;
                 imageSize = width * height * 4;
                 Vp8LTransforms.applyColorIndexingTransform(outRgba, curWidth, height, cit.tableSize, cit.tableData);

@@ -375,13 +375,18 @@ final class Vp8Decoder {
         }
 
         private static int intraModeFromLumaMode(int lumaMode) {
-            return switch (lumaMode) {
-                case Vp8Common.DC_PRED -> Vp8Common.B_DC_PRED;
-                case Vp8Common.V_PRED -> Vp8Common.B_VE_PRED;
-                case Vp8Common.H_PRED -> Vp8Common.B_HE_PRED;
-                case Vp8Common.TM_PRED -> Vp8Common.B_TM_PRED;
-                default -> throw new IllegalArgumentException("invalid luma mode");
-            };
+            switch (lumaMode) {
+                case Vp8Common.DC_PRED:
+                    return Vp8Common.B_DC_PRED;
+                case Vp8Common.V_PRED:
+                    return Vp8Common.B_VE_PRED;
+                case Vp8Common.H_PRED:
+                    return Vp8Common.B_HE_PRED;
+                case Vp8Common.TM_PRED:
+                    return Vp8Common.B_TM_PRED;
+                default:
+                    throw new IllegalArgumentException("invalid luma mode");
+            }
         }
 
         private MacroBlock readMacroblockHeader(int mbx) throws WebPDecodeException {
@@ -576,12 +581,23 @@ final class Vp8Decoder {
             byte[] ws = Vp8Prediction.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY);
 
             switch (mb.lumaMode) {
-                case Vp8Common.V_PRED -> Vp8Prediction.predictVpred(ws, 16, 1, 1, stride);
-                case Vp8Common.H_PRED -> Vp8Prediction.predictHpred(ws, 16, 1, 1, stride);
-                case Vp8Common.TM_PRED -> Vp8Prediction.predictTmpred(ws, 16, 1, 1, stride);
-                case Vp8Common.DC_PRED -> Vp8Prediction.predictDcpred(ws, 16, stride, mby != 0, mbx != 0);
-                case Vp8Common.B_PRED -> Vp8Prediction.predict4x4(ws, stride, mb.bpred, resdata);
-                default -> throw new IllegalStateException("Unexpected luma mode");
+                case Vp8Common.V_PRED:
+                    Vp8Prediction.predictVpred(ws, 16, 1, 1, stride);
+                    break;
+                case Vp8Common.H_PRED:
+                    Vp8Prediction.predictHpred(ws, 16, 1, 1, stride);
+                    break;
+                case Vp8Common.TM_PRED:
+                    Vp8Prediction.predictTmpred(ws, 16, 1, 1, stride);
+                    break;
+                case Vp8Common.DC_PRED:
+                    Vp8Prediction.predictDcpred(ws, 16, stride, mby != 0, mbx != 0);
+                    break;
+                case Vp8Common.B_PRED:
+                    Vp8Prediction.predict4x4(ws, stride, mb.bpred, resdata);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected luma mode");
             }
 
             if (mb.lumaMode != Vp8Common.B_PRED) {
@@ -616,23 +632,24 @@ final class Vp8Decoder {
             byte[] vws = Vp8Prediction.createBorderChroma(mbx, mby, topBorderV, leftBorderV);
 
             switch (mb.chromaMode) {
-                case Vp8Common.DC_PRED -> {
+                case Vp8Common.DC_PRED:
                     Vp8Prediction.predictDcpred(uws, 8, stride, mby != 0, mbx != 0);
                     Vp8Prediction.predictDcpred(vws, 8, stride, mby != 0, mbx != 0);
-                }
-                case Vp8Common.V_PRED -> {
+                    break;
+                case Vp8Common.V_PRED:
                     Vp8Prediction.predictVpred(uws, 8, 1, 1, stride);
                     Vp8Prediction.predictVpred(vws, 8, 1, 1, stride);
-                }
-                case Vp8Common.H_PRED -> {
+                    break;
+                case Vp8Common.H_PRED:
                     Vp8Prediction.predictHpred(uws, 8, 1, 1, stride);
                     Vp8Prediction.predictHpred(vws, 8, 1, 1, stride);
-                }
-                case Vp8Common.TM_PRED -> {
+                    break;
+                case Vp8Common.TM_PRED:
                     Vp8Prediction.predictTmpred(uws, 8, 1, 1, stride);
                     Vp8Prediction.predictTmpred(vws, 8, 1, 1, stride);
-                }
-                default -> throw new IllegalStateException("Unexpected chroma mode");
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected chroma mode");
             }
 
             for (int y = 0; y < 2; y++) {

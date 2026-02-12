@@ -108,17 +108,38 @@ final class Vp8Prediction {
 
                 int mode = modes[i] & 0xFF;
                 switch (mode) {
-                    case Vp8Common.B_TM_PRED -> predictTmpred(ws, 4, x0, y0, stride);
-                    case Vp8Common.B_VE_PRED -> predictBvepred(ws, x0, y0, stride);
-                    case Vp8Common.B_HE_PRED -> predictBhepred(ws, x0, y0, stride);
-                    case Vp8Common.B_DC_PRED -> predictBdcpred(ws, x0, y0, stride);
-                    case Vp8Common.B_LD_PRED -> predictBldpred(ws, x0, y0, stride);
-                    case Vp8Common.B_RD_PRED -> predictBrdpred(ws, x0, y0, stride);
-                    case Vp8Common.B_VR_PRED -> predictBvrpred(ws, x0, y0, stride);
-                    case Vp8Common.B_VL_PRED -> predictBvlpred(ws, x0, y0, stride);
-                    case Vp8Common.B_HD_PRED -> predictBhdpred(ws, x0, y0, stride);
-                    case Vp8Common.B_HU_PRED -> predictBhupred(ws, x0, y0, stride);
-                    default -> throw new IllegalArgumentException("Invalid intra mode: " + mode);
+                    case Vp8Common.B_TM_PRED:
+                        predictTmpred(ws, 4, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_VE_PRED:
+                        predictBvepred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_HE_PRED:
+                        predictBhepred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_DC_PRED:
+                        predictBdcpred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_LD_PRED:
+                        predictBldpred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_RD_PRED:
+                        predictBrdpred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_VR_PRED:
+                        predictBvrpred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_VL_PRED:
+                        predictBvlpred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_HD_PRED:
+                        predictBhdpred(ws, x0, y0, stride);
+                        break;
+                    case Vp8Common.B_HU_PRED:
+                        predictBhupred(ws, x0, y0, stride);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid intra mode: " + mode);
                 }
 
                 addResidue(ws, resdata, i * 16, y0, x0, stride);
