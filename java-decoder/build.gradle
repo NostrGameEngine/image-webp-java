@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.github.imagewebp'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:5.10.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation 'ar.com.hjg:pngj:2.1.0'
+}
+
+test {
+    useJUnitPlatform()
+
+    // Ensure `./gradlew test` always executes tests (useful for verification runs).
+    outputs.upToDateWhen { false }
+}
+
+tasks.register('runAwtViewer', JavaExec) {
+    group = 'application'
+    description = 'Manual WebP viewer (AWT/Swing; test-scope only).'
+
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.imagewebp.decoder.AwtWebPViewer')
+
+    // Optional: ./gradlew runAwtViewer -Pwebp=/path/to/file.webp
+    if (project.hasProperty('webp')) {
+        args(project.property('webp'))
+    }
+}
