@@ -21,8 +21,8 @@ dependencies {
 The decoder returns tightly-packed **RGBA8888** data in a `ByteBuffer`.
 
 ```java
-import io.github.imagewebp.decoder.DecodedWebP;
-import io.github.imagewebp.decoder.WebPDecoder;
+import org.ngengine.webp.decoder.DecodedWebP;
+import org.ngengine.webp.decoder.WebPDecoder;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Files;

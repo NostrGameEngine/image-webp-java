@@ -50,7 +50,7 @@ tasks.register('runAwtViewer', JavaExec) {
 
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
-    mainClass.set('io.github.imagewebp.decoder.AwtWebPViewer')
+    mainClass.set('org.ngengine.webp.decoder.AwtWebPViewer')
 
     // Optional: ./gradlew runAwtViewer -Pwebp=/path/to/file.webp
     if (project.hasProperty('webp')) {
