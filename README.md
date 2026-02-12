@@ -1,4 +1,4 @@
-# image-webp-decoder (Java)
+# image-webp-java
 
 Pure-Java WebP **still image** decoder for **Java 11+**.
 It is a mostly machine-translated port of the Rust library [image-rs/image-webp](https://github.com/image-rs/image-webp), with only limited manual review. As a result, this port may still contain bugs and decoding differences, including issues not present in the original library.
