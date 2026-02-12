@@ -11,9 +11,6 @@ permissions:
 jobs:
   publish-maven-central:
     runs-on: ubuntu-latest
-
-    if: ${{ secrets.OSSRH_USERNAME != '' && secrets.OSSRH_PASSWORD != '' && secrets.SIGNING_KEY != '' && secrets.SIGNING_PASSWORD != '' }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -31,13 +28,13 @@ jobs:
           VERSION=${TAG#v}
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Publish + release on Maven Central
-        env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-        run: ./gradlew --no-daemon -PversionOverride=${{ steps.version.outputs.version }} publishToSonatype closeAndReleaseSonatypeStagingRepository
+      # - name: Publish + release on Maven Central
+      #   env:
+      #     SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      #     SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      #     SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      #     SIGNING_PASSWORD: ${{ secrets.GPG_PASSPHRASE }}
+      #   run: ./gradlew --no-daemon -PversionOverride=${{ steps.version.outputs.version }} publishToSonatype closeAndReleaseSonatypeStagingRepository
 
   publish-github-packages:
     runs-on: ubuntu-latest

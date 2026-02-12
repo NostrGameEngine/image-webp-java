@@ -7,9 +7,6 @@ on:
 jobs:
   publish-snapshot:
     runs-on: ubuntu-latest
-
-    if: ${{ secrets.OSSRH_USERNAME != '' && secrets.OSSRH_PASSWORD != '' && secrets.SIGNING_KEY != '' && secrets.SIGNING_PASSWORD != '' }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -28,8 +25,8 @@ jobs:
 
       - name: Publish snapshot to Sonatype
         env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.GPG_PASSPHRASE }}
         run: ./gradlew --no-daemon -PversionOverride=${{ steps.version.outputs.snapshot }} publishToSonatype
