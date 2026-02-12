@@ -2,6 +2,7 @@ package io.github.imagewebp.decoder;
 
 /** VP8 boolean arithmetic decoder (ported from Rust src/vp8_arithmetic_decoder.rs; correctness-first). */
 final class Vp8ArithmeticDecoder {
+    /** Sentinel indicating the tolerant one-byte-overread window has been exhausted. */
     private static final int FINAL_BYTES_REMAINING_EOF = -0xE;
 
     private int[] chunks; // big-endian u32 chunks
@@ -13,6 +14,7 @@ final class Vp8ArithmeticDecoder {
     private final byte[] finalBytes = new byte[3];
     private int finalBytesRemaining;
 
+    /** Creates a decoder in reset state; call {@link #init(byte[], int)} before reading bits. */
     Vp8ArithmeticDecoder() {
         this.chunks = new int[0];
         this.chunkIndex = 0;
@@ -22,6 +24,13 @@ final class Vp8ArithmeticDecoder {
         this.finalBytesRemaining = FINAL_BYTES_REMAINING_EOF;
     }
 
+    /**
+     * Initializes the decoder with a VP8 partition payload.
+     *
+     * @param buf partition byte buffer
+     * @param len number of bytes from {@code buf} that belong to this partition
+     * @throws WebPDecodeException if {@code len} is out of bounds
+     */
     void init(byte[] buf, int len) throws WebPDecodeException {
         if (len < 0 || len > buf.length) {
             throw new WebPDecodeException("Invalid partition length");
@@ -53,6 +62,9 @@ final class Vp8ArithmeticDecoder {
         this.bitCount = -8;
     }
 
+    /**
+     * Returns {@code true} when the decoder has advanced past the tolerant read window at stream end.
+     */
     boolean isPastEof() {
         return finalBytesRemaining == FINAL_BYTES_REMAINING_EOF;
     }
@@ -79,6 +91,13 @@ final class Vp8ArithmeticDecoder {
         }
     }
 
+    /**
+     * Reads one arithmetic-coded bit using the provided probability.
+     *
+     * @param probability probability in [0, 255]
+     * @return decoded bit value
+     * @throws WebPDecodeException if the bitstream ends unexpectedly
+     */
     private boolean readBit(int probability) throws WebPDecodeException {
         if (bitCount < 0) {
             if (chunkIndex < chunks.length) {
@@ -117,14 +136,22 @@ final class Vp8ArithmeticDecoder {
         return retval;
     }
 
+    /** Reads a single boolean using VP8 probability coding. */
     boolean readBool(int probability) throws WebPDecodeException {
         return readBit(probability & 0xFF);
     }
 
+    /** Reads a single unbiased flag bit (equivalent to probability 128). */
     boolean readFlag() throws WebPDecodeException {
         return readBit(128);
     }
 
+    /**
+     * Reads an unsigned literal made of {@code n} bits.
+     *
+     * @param n bit width
+     * @return unsigned value composed MSB-first from the stream
+     */
     int readLiteral(int n) throws WebPDecodeException {
         int v = 0;
         for (int i = 0; i < n; i++) {
@@ -133,6 +160,12 @@ final class Vp8ArithmeticDecoder {
         return v;
     }
 
+    /**
+     * Reads an optional signed value encoded as: present flag, magnitude, then sign.
+     *
+     * @param n number of magnitude bits
+     * @return decoded value, or 0 when the present flag is false
+     */
     int readOptionalSignedValue(int n) throws WebPDecodeException {
         boolean flag = readFlag();
         if (!flag) {
@@ -143,15 +176,20 @@ final class Vp8ArithmeticDecoder {
         return sign ? -magnitude : magnitude;
     }
 
+    /** Reads a sign bit where {@code true} represents a negative sign. */
     boolean readSign() throws WebPDecodeException {
         return readFlag();
     }
 
+    /** Decodes a symbol by traversing the supplied VP8 probability tree from its root node. */
     int readWithTree(Vp8TreeNode[] tree) throws WebPDecodeException {
         Vp8TreeNode first = tree[0];
         return readWithTreeWithFirstNode(tree, first);
     }
 
+    /**
+     * Decodes a symbol by traversing a VP8 probability tree from a caller-provided starting node.
+     */
     int readWithTreeWithFirstNode(Vp8TreeNode[] tree, Vp8TreeNode firstNode) throws WebPDecodeException {
         int index = firstNode.index;
         while (true) {

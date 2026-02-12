@@ -540,8 +540,11 @@ final class Vp8LDecoder {
 
     private interface Transform {}
 
+    /** Predictor transform metadata and per-block transform image. */
     private static final class PredictorTransform implements Transform {
+        /** Predictor block size as log2 shift. */
         final int sizeBits;
+        /** Packed per-block predictor metadata image. */
         final ByteBuffer data;
 
         PredictorTransform(int sizeBits, ByteBuffer data) {
@@ -550,8 +553,11 @@ final class Vp8LDecoder {
         }
     }
 
+    /** Color transform metadata and per-block transform image. */
     private static final class ColorTransform implements Transform {
+        /** Color transform block size as log2 shift. */
         final int sizeBits;
+        /** Packed per-block color transform metadata image. */
         final ByteBuffer data;
 
         ColorTransform(int sizeBits, ByteBuffer data) {
@@ -560,10 +566,14 @@ final class Vp8LDecoder {
         }
     }
 
+    /** Marker transform for subtract-green postprocessing. */
     private static final class SubtractGreenTransform implements Transform {}
 
+    /** Color-indexing transform lookup table metadata. */
     private static final class ColorIndexingTransform implements Transform {
+        /** Number of entries in the color table. */
         final int tableSize;
+        /** RGBA table data (4 bytes per entry). */
         final ByteBuffer tableData;
 
         ColorIndexingTransform(int tableSize, ByteBuffer tableData) {
@@ -572,12 +582,18 @@ final class Vp8LDecoder {
         }
     }
 
+    /** Decoding context for Huffman group selection and optional color cache. */
     private static final class HuffmanInfo {
+        /** Huffman meta-image width in blocks. */
         final int xsize;
         final int[] image; // may be null
+        /** Log2 block size used for Huffman meta-image lookup. */
         final int bits;
+        /** Mask used to detect meta-image block boundaries. */
         final int mask;
+        /** Optional color cache; null when disabled. */
         final ColorCache cache;
+        /** Huffman tree groups for literal/length/distance channels. */
         final Vp8LHuffmanTree[][] groups;
 
         HuffmanInfo(int xsize, int[] image, int bits, int mask, ColorCache cache, Vp8LHuffmanTree[][] groups) {
@@ -589,6 +605,7 @@ final class Vp8LDecoder {
             this.groups = groups;
         }
 
+        /** Returns Huffman group index for pixel position {@code (x, y)}. */
         int getHuffIndex(int x, int y) {
             if (bits == 0) {
                 return 0;
@@ -598,8 +615,11 @@ final class Vp8LDecoder {
         }
     }
 
+    /** VP8L color cache keyed by hashed ARGB values. */
     private static final class ColorCache {
+        /** Number of hash bits. */
         final int bits;
+        /** Packed RGBA cache table. */
         final byte[] table;
 
         ColorCache(int bits) {
@@ -607,6 +627,7 @@ final class Vp8LDecoder {
             this.table = new byte[(1 << bits) * 4];
         }
 
+        /** Inserts an ARGB pixel into the cache at its hashed slot. */
         void insert(byte r, byte g, byte b, byte a) {
             int color = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF) | ((a & 0xFF) << 24);
             int index = (0x1e35a7bd * color) >>> (32 - bits);
@@ -617,6 +638,7 @@ final class Vp8LDecoder {
             table[off + 3] = a;
         }
 
+        /** Writes a cached pixel into {@code out} at byte offset {@code outOff}. */
         void lookupInto(int index, ByteBuffer out, int outOff) {
             int off = index * 4;
             out.put(outOff, table[off]);

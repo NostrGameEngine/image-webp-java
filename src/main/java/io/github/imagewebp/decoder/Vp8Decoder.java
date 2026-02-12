@@ -7,6 +7,7 @@ import java.util.Arrays;
 final class Vp8Decoder {
     private Vp8Decoder() {}
 
+    /** Decodes a VP8 keyframe payload and writes RGBA pixels to {@code outRgba}. */
     static void decodeToRgba(
             byte[] webp,
             int off,
@@ -23,51 +24,84 @@ final class Vp8Decoder {
         Yuv.fillRgbaBufferFancy(outRgba, f.ybuf, f.ubuf, f.vbuf, width, height, f.bufferWidth);
     }
 
+    /** Decoded VP8 frame buffers and frame-level header metadata. */
     private static final class Frame {
+        /** Frame width in pixels. */
         int width;
+        /** Frame height in pixels. */
         int height;
+        /** Internal luma buffer stride width in pixels. */
         int bufferWidth;
+        /** Luma plane buffer. */
         byte[] ybuf;
+        /** Chroma U plane buffer. */
         byte[] ubuf;
+        /** Chroma V plane buffer. */
         byte[] vbuf;
 
+        /** VP8 bitstream version from frame tag. */
         int version;
+        /** VP8 display flag (true means hidden frame). */
         boolean forDisplay;
+        /** VP8 colorspace/pixel type marker. */
         int pixelType;
 
         boolean filterType; // true=simple
+        /** Base loop filter level. */
         int filterLevel;
+        /** Loop filter sharpness setting. */
         int sharpnessLevel;
     }
 
+    /** Segment-level quantization and loop-filter configuration. */
     private static final class Segment {
+        /** Segment Y DC quantizer. */
         short ydc;
+        /** Segment Y AC quantizer. */
         short yac;
+        /** Segment Y2 DC quantizer. */
         short y2dc;
+        /** Segment Y2 AC quantizer. */
         short y2ac;
+        /** Segment UV DC quantizer. */
         short uvdc;
+        /** Segment UV AC quantizer. */
         short uvac;
 
+        /** True when segment values are delta-from-base instead of absolute. */
         boolean deltaValues;
+        /** Segment quantizer level selector. */
         byte quantizerLevel;
+        /** Segment loop filter level selector. */
         byte loopfilterLevel;
     }
 
+    /** Per-macroblock mode flags and decoded non-zero state. */
     private static final class MacroBlock {
+        /** 4x4 luma block prediction modes in raster order. */
         final byte[] bpred = new byte[16];
+        /** Macroblock luma prediction mode. */
         int lumaMode;
+        /** Macroblock chroma prediction mode. */
         int chromaMode;
+        /** Segment index assigned to this macroblock. */
         int segmentId;
+        /** Whether coefficient token stream was skipped. */
         boolean coeffsSkipped;
+        /** Whether any transform coefficient is non-zero. */
         boolean nonZeroDct;
     }
 
+    /** Prediction and complexity context carried from neighboring macroblocks. */
     private static final class PreviousMacroBlock {
+        /** Top/left neighbor 4x4 prediction modes. */
         final byte[] bpred = new byte[4];
         // complexity layout: y2,y,y,y,y,u,u,v,v
+        /** Neighbor coefficient complexity context state. */
         final byte[] complexity = new byte[9];
     }
 
+    /** Stateful VP8 bitstream decoder for a single keyframe payload. */
     private static final class Decoder {
         private static final int PLANE_YCOEFF1 = 0;
         private static final int PLANE_Y2 = 1;
@@ -124,6 +158,7 @@ final class Vp8Decoder {
             this.tokenProbs = Vp8Common.newDefaultTokenProbNodes();
         }
 
+        /** Decodes one full VP8 keyframe into planar YUV buffers. */
         Frame decodeFrame() throws WebPDecodeException {
             readFrameHeader();
 

@@ -565,6 +565,7 @@ final class Vp8Common {
 
     static final int[] ZIGZAG = {0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15};
 
+    /** Builds decoder nodes from a compact VP8 tree array and its per-node probabilities. */
     static Vp8TreeNode[] treeNodesFrom(int[] tree, short[] probs) {
         int m = probs.length;
         if (tree.length != 2 * m) {
@@ -594,6 +595,7 @@ final class Vp8Common {
         return out;
     }
 
+    /** Creates default token-probability trees used for coefficient decoding. */
     static Vp8TreeNode[][][][] newDefaultTokenProbNodes() {
         Vp8TreeNode[][][][] out = new Vp8TreeNode[4][8][3][];
         for (int p = 0; p < 4; p++) {
@@ -605,6 +607,8 @@ final class Vp8Common {
         }
         return out;
     }
+
+    /** Deep-copies token-probability trees so decode updates do not mutate shared defaults. */
     static Vp8TreeNode[][][][] deepCopyTokenProbNodes(Vp8TreeNode[][][][] in) {
         Vp8TreeNode[][][][] out = new Vp8TreeNode[4][8][3][];
         for (int p = 0; p < 4; p++) {

@@ -5,20 +5,29 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.IntFunction;
 
-/** Pure-Java WebP decoder (no AWT). */
+/** Pure-Java WebP decoder */
 public final class WebPDecoder {
     private WebPDecoder() {}
 
-    /** Decode a WebP still image from its full file bytes. */
+    /**
+     * Decodes a WebP still image from complete file bytes.
+     *
+     * @param webpBytes full WebP file bytes
+     * @return decoded image in RGBA8888 format
+     * @throws WebPDecodeException if the input is invalid, unsupported, or truncated
+     */
     public static DecodedWebP decode(byte[] webpBytes) throws WebPDecodeException {
         return decode(webpBytes, ByteBuffer::allocate);
     }
 
     /**
-     * Decode a WebP still image from its full file bytes.
+     * Decodes a WebP still image from complete file bytes.
      *
+     * @param webpBytes full WebP file bytes
      * @param rgbaAllocator Allocator used for the output RGBA buffer (and internal temporary RGBA buffers).
      *                      The returned buffer may be direct; code must not assume array-backed buffers.
+     * @return decoded image in RGBA8888 format
+     * @throws WebPDecodeException if the input is invalid, unsupported, truncated, or decode fails
      */
     public static DecodedWebP decode(byte[] webpBytes, IntFunction<ByteBuffer> rgbaAllocator) throws WebPDecodeException {
         Objects.requireNonNull(rgbaAllocator, "rgbaAllocator");

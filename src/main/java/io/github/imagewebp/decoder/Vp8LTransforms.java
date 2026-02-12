@@ -6,10 +6,12 @@ import java.nio.ByteBuffer;
 final class Vp8LTransforms {
     private Vp8LTransforms() {}
 
+    /** Returns `(size + (1 << bits) - 1) >> bits` for VP8L block-grid dimensions. */
     static int subsampleSize(int size, int bits) {
         return (size + (1 << bits) - 1) >> bits;
     }
 
+    /** Applies the VP8L predictor transform in-place to decoded ARGB data. */
     static void applyPredictorTransform(
             ByteBuffer imageData,
             int width,
@@ -334,6 +336,7 @@ final class Vp8LTransforms {
         }
     }
 
+    /** Applies the VP8L color transform in-place to decoded ARGB data. */
     static void applyColorTransform(ByteBuffer imageData, int width, int height, int sizeBits, ByteBuffer transformData) {
         int blockXsize = subsampleSize(width, sizeBits);
 
@@ -367,6 +370,7 @@ final class Vp8LTransforms {
         }
     }
 
+    /** Applies the subtract-green transform in-place for the first {@code imageSize} bytes. */
     static void applySubtractGreenTransform(ByteBuffer imageData, int imageSize) {
         for (int i = 0; i < imageSize; i += 4) {
             byte g = imageData.get(i + 1);
@@ -375,6 +379,7 @@ final class Vp8LTransforms {
         }
     }
 
+    /** Applies VP8L color indexing transform, expanding palette indexes into RGBA pixels. */
     static void applyColorIndexingTransform(
             ByteBuffer imageData,
             int width,

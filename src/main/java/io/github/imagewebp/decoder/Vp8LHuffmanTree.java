@@ -30,18 +30,22 @@ final class Vp8LHuffmanTree {
         this.secondaryTable = secondaryTable;
     }
 
+    /** Creates a degenerate tree that always returns {@code symbol}. */
     static Vp8LHuffmanTree buildSingleNode(int symbol) {
         return new Vp8LHuffmanTree(symbol);
     }
 
+    /** Creates a two-symbol tree with one-bit codewords for zero/one branches. */
     static Vp8LHuffmanTree buildTwoNode(int zero, int one) {
         return new Vp8LHuffmanTree(0x1, new int[] { (1 << 12) | zero, (1 << 12) | one }, new int[0]);
     }
 
+    /** Returns whether this instance is a degenerate single-symbol Huffman tree. */
     boolean isSingleNode() {
         return single;
     }
 
+    /** Builds canonical Huffman decode tables from implicit code lengths. */
     static Vp8LHuffmanTree buildImplicit(int[] codeLengths) throws WebPDecodeException {
         int[] histogram = new int[MAX_ALLOWED_CODE_LENGTH + 1];
         int numSymbols = 0;
@@ -160,6 +164,7 @@ final class Vp8LHuffmanTree {
         return codeword;
     }
 
+    /** Reads one symbol from the bitstream using this Huffman table. */
     int readSymbol(Vp8LBitReader br) throws WebPDecodeException {
         if (single) {
             return singleSymbol;

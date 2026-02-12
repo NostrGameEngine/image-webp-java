@@ -7,6 +7,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Basic sanity tests for invalid input handling and fixture path availability. */
 public class SmokeTest {
     @Test
     void decoderRejectsInvalidInput() {

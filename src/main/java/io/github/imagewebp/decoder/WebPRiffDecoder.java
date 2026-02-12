@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.IntFunction;
 
+/** RIFF/WebP container parser that dispatches to VP8, VP8L, and optional ALPH decoding paths. */
 final class WebPRiffDecoder {
     private WebPRiffDecoder() {}
 

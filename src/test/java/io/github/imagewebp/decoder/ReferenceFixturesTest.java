@@ -13,6 +13,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Compares decoded fixture outputs against PNG reference images for lossy and lossless cases. */
 final class ReferenceFixturesTest {
     @ParameterizedTest
     @ValueSource(strings = {
@@ -103,6 +104,7 @@ final class ReferenceFixturesTest {
         return out;
     }
 
+    /** Immutable container for PNG dimensions, channel count, and packed pixel data. */
     private static final class PngData {
         final int width;
         final int height;

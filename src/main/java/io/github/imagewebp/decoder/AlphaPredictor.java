@@ -6,6 +6,9 @@ import java.nio.ByteBuffer;
 final class AlphaPredictor {
     private AlphaPredictor() {}
 
+    /**
+     * Computes the ALPH predictor value for a pixel using the configured filtering method.
+     */
     static int predict(int x, int y, int width, int filteringMethod, ByteBuffer rgba) {
         // filteringMethod: 0 None, 1 Horizontal, 2 Vertical, 3 Gradient
         switch (filteringMethod) {

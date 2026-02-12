@@ -7,6 +7,9 @@ import java.util.function.IntFunction;
 final class AlphaChunkDecoder {
     private AlphaChunkDecoder() {}
 
+    /**
+     * Decodes an `ALPH` chunk payload and writes the reconstructed alpha channel into {@code rgba}.
+     */
     static void applyAlph(
             byte[] webp,
             int alphOff,
