@@ -26,10 +26,10 @@ final class ReferenceFixturesTest {
             "regression/lossless_indexed_4bit_palette",
     })
     void decodeLosslessMatchesReferencePng(String fixture) throws Exception {
-        byte[] webp = Files.readAllBytes(Path.of("..", "tests", "images", fixture + ".webp"));
+        byte[] webp = Files.readAllBytes(Path.of(".", "tests", "images", fixture + ".webp"));
         DecodedWebP decoded = WebPDecoder.decode(webp);
 
-        PngData ref = readPng(Path.of("..", "tests", "reference", fixture + ".png"));
+        PngData ref = readPng(Path.of(".", "tests", "reference", fixture + ".png"));
 
         assertEquals(ref.width, decoded.width);
         assertEquals(ref.height, decoded.height);
@@ -56,9 +56,9 @@ final class ReferenceFixturesTest {
             "gallery1/2",
     })
     void decodeLossyMatchesReferencePng(String fixture) throws Exception {
-        byte[] webp = Files.readAllBytes(Path.of("..", "tests", "images", fixture + ".webp"));
+        byte[] webp = Files.readAllBytes(Path.of(".", "tests", "images", fixture + ".webp"));
         DecodedWebP decoded = WebPDecoder.decode(webp);
-        PngData ref = readPng(Path.of("..", "tests", "reference", fixture + ".png"));
+        PngData ref = readPng(Path.of(".", "tests", "reference", fixture + ".png"));
 
         assertEquals(ref.width, decoded.width);
         assertEquals(ref.height, decoded.height);

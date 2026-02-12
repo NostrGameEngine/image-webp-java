@@ -15,7 +15,7 @@ public class SmokeTest {
 
     @Test
     void canReadFixtureBytes() throws Exception {
-        Path p = Path.of("..", "tests", "images");
+        Path p = Path.of(".", "tests", "images");
         assertTrue(Files.exists(p));
     }
 }
