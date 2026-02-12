@@ -39,20 +39,26 @@ repositories {
 
 ## Usage
 
-The decoder returns tightly-packed **RGBA8888** bytes.
+The decoder returns tightly-packed **RGBA8888** data in a `ByteBuffer`.
 
 ```java
 import io.github.imagewebp.decoder.DecodedWebP;
 import io.github.imagewebp.decoder.WebPDecoder;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 byte[] webp = Files.readAllBytes(Path.of("image.webp"));
+
+// Default allocator uses ByteBuffer.allocate(...)
 DecodedWebP decoded = WebPDecoder.decode(webp);
 
+// Or provide your own allocator (e.g. allocateDirect / engine allocator)
+// DecodedWebP decoded = WebPDecoder.decode(webp, ByteBuffer::allocateDirect);
+
 System.out.println(decoded.width + "x" + decoded.height + ", alpha=" + decoded.hasAlpha);
-byte[] rgba = decoded.rgba;
+ByteBuffer rgba = decoded.rgba; // position=0, limit=width*height*4
 ```
 
 ## Development

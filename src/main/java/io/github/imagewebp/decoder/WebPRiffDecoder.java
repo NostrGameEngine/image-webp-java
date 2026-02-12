@@ -3,11 +3,16 @@ package io.github.imagewebp.decoder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.function.IntFunction;
 
 final class WebPRiffDecoder {
     private WebPRiffDecoder() {}
 
     static DecodedWebP decode(byte[] bytes) throws IOException, WebPDecodeException {
+        return decode(bytes, ByteBuffer::allocate);
+    }
+
+    static DecodedWebP decode(byte[] bytes, IntFunction<ByteBuffer> rgbaAllocator) throws IOException, WebPDecodeException {
         if (bytes.length < 12) {
             throw new WebPDecodeException("Input too short");
         }
@@ -154,9 +159,17 @@ final class WebPRiffDecoder {
         }
 
         // Decode.
-        byte[] rgba = new byte[width * height * 4];
+        int rgbaSize = width * height * 4;
+        ByteBuffer rgba = rgbaAllocator.apply(rgbaSize);
+        if (rgba == null || rgba.capacity() < rgbaSize) {
+            throw new WebPDecodeException("RGBA allocator returned too-small buffer");
+        }
+        rgba.clear();
+        rgba.limit(rgbaSize);
+
         if (hasVp8l) {
-            Vp8LDecoder.decodeToRgba(bytes, vp8lStart, vp8lSize, width, height, false, rgba);
+            Vp8LDecoder.decodeToRgba(bytes, vp8lStart, vp8lSize, width, height, false, rgba, rgbaAllocator);
+            rgba.position(0);
             return new DecodedWebP(width, height, hasAlpha, rgba);
         }
 
@@ -166,14 +179,15 @@ final class WebPRiffDecoder {
             if (alphStart < 0) {
                 throw new WebPDecodeException("VP8X alpha flag set but no ALPH chunk found");
             }
-            AlphaChunkDecoder.applyAlph(bytes, alphStart, alphSize, width, height, rgba);
+            AlphaChunkDecoder.applyAlph(bytes, alphStart, alphSize, width, height, rgba, rgbaAllocator);
         } else {
             // ensure opaque
-            for (int i = 3; i < rgba.length; i += 4) {
-                rgba[i] = (byte) 0xFF;
+            for (int i = 3; i < rgbaSize; i += 4) {
+                rgba.put(i, (byte) 0xFF);
             }
         }
 
+        rgba.position(0);
         return new DecodedWebP(width, height, hasAlpha, rgba);
     }
 

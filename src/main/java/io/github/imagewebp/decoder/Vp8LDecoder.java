@@ -1,5 +1,8 @@
 package io.github.imagewebp.decoder;
 
+import java.nio.ByteBuffer;
+import java.util.function.IntFunction;
+
 /** VP8L (lossless) decoder. */
 final class Vp8LDecoder {
     private Vp8LDecoder() {}
@@ -53,12 +56,14 @@ final class Vp8LDecoder {
             int width,
             int height,
             boolean implicitDimensions,
-            byte[] outRgba
+            ByteBuffer outRgba,
+            IntFunction<ByteBuffer> rgbaAllocator
     ) throws WebPDecodeException {
         if (width <= 0 || height <= 0) {
             throw new WebPDecodeException("Invalid dimensions");
         }
-        if (outRgba.length < width * height * 4) {
+        int required = width * height * 4;
+        if (outRgba.remaining() < required) {
             throw new WebPDecodeException("Output buffer too small");
         }
 
@@ -104,8 +109,14 @@ final class Vp8LDecoder {
                     int sizeBits = br.readBits(3) + 2;
                     int blockXsize = Vp8LTransforms.subsampleSize(transformedWidth, sizeBits);
                     int blockYsize = Vp8LTransforms.subsampleSize(height, sizeBits);
-                    byte[] predictorData = new byte[blockXsize * blockYsize * 4];
-                    decodeImageStream(br, blockXsize, blockYsize, false, predictorData);
+                    int size = blockXsize * blockYsize * 4;
+                    ByteBuffer predictorData = rgbaAllocator.apply(size);
+                    if (predictorData == null || predictorData.capacity() < size) {
+                        throw new WebPDecodeException("RGBA allocator returned too-small buffer");
+                    }
+                    predictorData.clear();
+                    predictorData.limit(size);
+                    decodeImageStream(br, blockXsize, blockYsize, false, predictorData, size, rgbaAllocator);
                     transforms[transformType] = new PredictorTransform(sizeBits, predictorData);
                     break;
                 }
@@ -114,8 +125,14 @@ final class Vp8LDecoder {
                     int sizeBits = br.readBits(3) + 2;
                     int blockXsize = Vp8LTransforms.subsampleSize(transformedWidth, sizeBits);
                     int blockYsize = Vp8LTransforms.subsampleSize(height, sizeBits);
-                    byte[] transformData = new byte[blockXsize * blockYsize * 4];
-                    decodeImageStream(br, blockXsize, blockYsize, false, transformData);
+                    int size = blockXsize * blockYsize * 4;
+                    ByteBuffer transformData = rgbaAllocator.apply(size);
+                    if (transformData == null || transformData.capacity() < size) {
+                        throw new WebPDecodeException("RGBA allocator returned too-small buffer");
+                    }
+                    transformData.clear();
+                    transformData.limit(size);
+                    decodeImageStream(br, blockXsize, blockYsize, false, transformData, size, rgbaAllocator);
                     transforms[transformType] = new ColorTransform(sizeBits, transformData);
                     break;
                 }
@@ -125,8 +142,14 @@ final class Vp8LDecoder {
                 case 3:
                 {
                     int tableSize = br.readBits(8) + 1;
-                    byte[] colorMap = new byte[tableSize * 4];
-                    decodeImageStream(br, tableSize, 1, false, colorMap);
+                    int size = tableSize * 4;
+                    ByteBuffer colorMap = rgbaAllocator.apply(size);
+                    if (colorMap == null || colorMap.capacity() < size) {
+                        throw new WebPDecodeException("RGBA allocator returned too-small buffer");
+                    }
+                    colorMap.clear();
+                    colorMap.limit(size);
+                    decodeImageStream(br, tableSize, 1, false, colorMap, size, rgbaAllocator);
 
                     int bits;
                     if (tableSize <= 2) {
@@ -149,7 +172,7 @@ final class Vp8LDecoder {
         }
 
         int transformedSize = transformedWidth * height * 4;
-        decodeImageStream(br, transformedWidth, height, true, outRgba, transformedSize);
+        decodeImageStream(br, transformedWidth, height, true, outRgba, transformedSize, rgbaAllocator);
 
         int imageSize = transformedSize;
         int curWidth = transformedWidth;
@@ -177,29 +200,20 @@ final class Vp8LDecoder {
             int width,
             int height,
             boolean isArgbImg,
-            byte[] data
-    ) throws WebPDecodeException {
-        decodeImageStream(br, width, height, isArgbImg, data, data.length);
-    }
-
-    private static void decodeImageStream(
-            Vp8LBitReader br,
-            int width,
-            int height,
-            boolean isArgbImg,
-            byte[] data,
-            int dataSize
+            ByteBuffer data,
+            int dataSize,
+            IntFunction<ByteBuffer> rgbaAllocator
     ) throws WebPDecodeException {
         Integer cacheBits = readColorCache(br);
         ColorCache cache = cacheBits != null ? new ColorCache(cacheBits) : null;
 
-        HuffmanInfo info = readHuffmanCodes(br, isArgbImg, width, height, cache);
+        HuffmanInfo info = readHuffmanCodes(br, isArgbImg, width, height, cache, rgbaAllocator);
         decodeImageData(br, width, height, info, data, dataSize);
     }
 
-    private static void adjustColorMap(byte[] colorMap) {
-        for (int i = 4; i < colorMap.length; i++) {
-            colorMap[i] = (byte) (colorMap[i] + colorMap[i - 4]);
+    private static void adjustColorMap(ByteBuffer colorMap) {
+        for (int i = 4; i < colorMap.limit(); i++) {
+            colorMap.put(i, (byte) (colorMap.get(i) + colorMap.get(i - 4)));
         }
     }
 
@@ -219,7 +233,8 @@ final class Vp8LDecoder {
             boolean readMeta,
             int xsize,
             int ysize,
-            ColorCache cache
+            ColorCache cache,
+            IntFunction<ByteBuffer> rgbaAllocator
     ) throws WebPDecodeException {
         int numHuffGroups = 1;
 
@@ -233,13 +248,19 @@ final class Vp8LDecoder {
             huffmanXsize = Vp8LTransforms.subsampleSize(xsize, huffmanBits);
             huffmanYsize = Vp8LTransforms.subsampleSize(ysize, huffmanBits);
 
-            byte[] tmp = new byte[huffmanXsize * huffmanYsize * 4];
-            decodeImageStream(br, huffmanXsize, huffmanYsize, false, tmp);
+            int tmpSize = huffmanXsize * huffmanYsize * 4;
+            ByteBuffer tmp = rgbaAllocator.apply(tmpSize);
+            if (tmp == null || tmp.capacity() < tmpSize) {
+                throw new WebPDecodeException("RGBA allocator returned too-small buffer");
+            }
+            tmp.clear();
+            tmp.limit(tmpSize);
+            decodeImageStream(br, huffmanXsize, huffmanYsize, false, tmp, tmpSize, rgbaAllocator);
 
             entropyImage = new int[huffmanXsize * huffmanYsize];
             for (int i = 0; i < entropyImage.length; i++) {
-                int r = tmp[i * 4] & 0xFF;
-                int g = tmp[i * 4 + 1] & 0xFF;
+                int r = tmp.get(i * 4) & 0xFF;
+                int g = tmp.get(i * 4 + 1) & 0xFF;
                 int meta = (r << 8) | g;
                 entropyImage[i] = meta;
                 if (meta >= numHuffGroups) {
@@ -368,7 +389,7 @@ final class Vp8LDecoder {
             int width,
             int height,
             HuffmanInfo info,
-            byte[] data,
+            ByteBuffer data,
             int dataSize
     ) throws WebPDecodeException {
         int numValues = width * height;
@@ -405,10 +426,10 @@ final class Vp8LDecoder {
 
                         for (int i = 0; i < n; i++) {
                             int p = (index + i) * 4;
-                            data[p] = red;
-                            data[p + 1] = green;
-                            data[p + 2] = blue;
-                            data[p + 3] = alpha;
+                            data.put(p, red);
+                            data.put(p + 1, green);
+                            data.put(p + 2, blue);
+                            data.put(p + 3, alpha);
                         }
 
                         if (info.cache != null) {
@@ -433,10 +454,10 @@ final class Vp8LDecoder {
                 byte alpha = (byte) tree[ALPHA].readSymbol(br);
 
                 int p = index * 4;
-                data[p] = red;
-                data[p + 1] = green;
-                data[p + 2] = blue;
-                data[p + 3] = alpha;
+                data.put(p, red);
+                data.put(p + 1, green);
+                data.put(p + 2, blue);
+                data.put(p + 3, alpha);
 
                 if (info.cache != null) {
                     info.cache.insert(red, green, blue, alpha);
@@ -455,13 +476,14 @@ final class Vp8LDecoder {
                 }
 
                 for (int i = 0; i < length * 4; i++) {
-                    data[index * 4 + i] = data[index * 4 + i - dist * 4];
+                    int dst = index * 4 + i;
+                    data.put(dst, data.get(dst - dist * 4));
                 }
 
                 if (info.cache != null) {
                     for (int i = 0; i < length; i++) {
                         int p = (index + i) * 4;
-                        info.cache.insert(data[p], data[p + 1], data[p + 2], data[p + 3]);
+                        info.cache.insert(data.get(p), data.get(p + 1), data.get(p + 2), data.get(p + 3));
                     }
                 }
 
@@ -520,9 +542,9 @@ final class Vp8LDecoder {
 
     private static final class PredictorTransform implements Transform {
         final int sizeBits;
-        final byte[] data;
+        final ByteBuffer data;
 
-        PredictorTransform(int sizeBits, byte[] data) {
+        PredictorTransform(int sizeBits, ByteBuffer data) {
             this.sizeBits = sizeBits;
             this.data = data;
         }
@@ -530,9 +552,9 @@ final class Vp8LDecoder {
 
     private static final class ColorTransform implements Transform {
         final int sizeBits;
-        final byte[] data;
+        final ByteBuffer data;
 
-        ColorTransform(int sizeBits, byte[] data) {
+        ColorTransform(int sizeBits, ByteBuffer data) {
             this.sizeBits = sizeBits;
             this.data = data;
         }
@@ -542,9 +564,9 @@ final class Vp8LDecoder {
 
     private static final class ColorIndexingTransform implements Transform {
         final int tableSize;
-        final byte[] tableData;
+        final ByteBuffer tableData;
 
-        ColorIndexingTransform(int tableSize, byte[] tableData) {
+        ColorIndexingTransform(int tableSize, ByteBuffer tableData) {
             this.tableSize = tableSize;
             this.tableData = tableData;
         }
@@ -595,12 +617,12 @@ final class Vp8LDecoder {
             table[off + 3] = a;
         }
 
-        void lookupInto(int index, byte[] out, int outOff) {
+        void lookupInto(int index, ByteBuffer out, int outOff) {
             int off = index * 4;
-            out[outOff] = table[off];
-            out[outOff + 1] = table[off + 1];
-            out[outOff + 2] = table[off + 2];
-            out[outOff + 3] = table[off + 3];
+            out.put(outOff, table[off]);
+            out.put(outOff + 1, table[off + 1]);
+            out.put(outOff + 2, table[off + 2]);
+            out.put(outOff + 3, table[off + 3]);
         }
     }
 }

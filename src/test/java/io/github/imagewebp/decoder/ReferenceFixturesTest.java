@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -34,7 +35,7 @@ final class ReferenceFixturesTest {
         assertEquals(ref.width, decoded.width);
         assertEquals(ref.height, decoded.height);
 
-        byte[] rgba = decoded.rgba;
+        byte[] rgba = toByteArray(decoded.rgba);
         if (ref.channels == 4) {
             assertArrayEquals(ref.pixels, rgba);
         } else if (ref.channels == 3) {
@@ -63,7 +64,7 @@ final class ReferenceFixturesTest {
         assertEquals(ref.width, decoded.width);
         assertEquals(ref.height, decoded.height);
 
-        byte[] rgba = decoded.rgba;
+        byte[] rgba = toByteArray(decoded.rgba);
         if (ref.channels == 4) {
             assertArrayEquals(ref.pixels, rgba);
         } else {
@@ -92,6 +93,14 @@ final class ReferenceFixturesTest {
         } finally {
             reader.end();
         }
+    }
+
+    private static byte[] toByteArray(ByteBuffer rgba) {
+        ByteBuffer bb = rgba.duplicate();
+        bb.rewind();
+        byte[] out = new byte[bb.remaining()];
+        bb.get(out);
+        return out;
     }
 
     private static final class PngData {

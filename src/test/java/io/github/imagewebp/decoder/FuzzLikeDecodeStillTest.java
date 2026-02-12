@@ -59,7 +59,7 @@ final class FuzzLikeDecodeStillTest {
                 DecodedWebP decoded = WebPDecoder.decode(webp);
                 assertEquals(w, decoded.width);
                 assertEquals(h, decoded.height);
-                assertEquals(w * h * 4, decoded.rgba.length);
+                assertEquals(w * h * 4, decoded.rgba.remaining());
             } catch (WebPDecodeException expected) {
                 // ok
             } catch (OutOfMemoryError oom) {

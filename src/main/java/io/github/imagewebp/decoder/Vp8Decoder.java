@@ -1,5 +1,6 @@
 package io.github.imagewebp.decoder;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /** VP8 (lossy) keyframe decoder (ported from Rust src/vp8.rs; no AWT). */
@@ -12,7 +13,7 @@ final class Vp8Decoder {
             int len,
             int width,
             int height,
-            byte[] outRgba
+            ByteBuffer outRgba
     ) throws WebPDecodeException {
         Decoder d = new Decoder(webp, off, len);
         Frame f = d.decodeFrame();

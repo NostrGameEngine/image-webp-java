@@ -1,5 +1,7 @@
 package io.github.imagewebp.decoder;
 
+import java.nio.ByteBuffer;
+
 /** Lossless VP8L transforms (predictor/color/subtract-green/color-indexing). */
 final class Vp8LTransforms {
     private Vp8LTransforms() {}
@@ -9,19 +11,19 @@ final class Vp8LTransforms {
     }
 
     static void applyPredictorTransform(
-            byte[] imageData,
+            ByteBuffer imageData,
             int width,
             int height,
             int sizeBits,
-            byte[] predictorData
+            ByteBuffer predictorData
     ) throws WebPDecodeException {
         int blockXsize = subsampleSize(width, sizeBits);
 
         // top-left pixel: A += 255
-        if (imageData.length < 4) {
+        if (imageData.remaining() < 4) {
             return;
         }
-        imageData[3] = (byte) (imageData[3] + (byte) 0xFF);
+        imageData.put(3, (byte) (imageData.get(3) + (byte) 0xFF));
 
         // top row: use predictor 1 (left)
         applyPredictor1(imageData, 4, width * 4, width);
@@ -31,14 +33,15 @@ final class Vp8LTransforms {
             int row = y * width * 4;
             int prev = (y - 1) * width * 4;
             for (int c = 0; c < 4; c++) {
-                imageData[row + c] = (byte) (imageData[row + c] + imageData[prev + c]);
+                int idx = row + c;
+                imageData.put(idx, (byte) (imageData.get(idx) + imageData.get(prev + c)));
             }
         }
 
         for (int y = 1; y < height; y++) {
             for (int blockX = 0; blockX < blockXsize; blockX++) {
                 int blockIndex = (y >> sizeBits) * blockXsize + blockX;
-                int predictor = predictorData[blockIndex * 4 + 1] & 0xFF;
+                int predictor = predictorData.get(blockIndex * 4 + 1) & 0xFF;
 
                 int startX = Math.max(blockX << sizeBits, 1);
                 int endX = Math.min((blockX + 1) << sizeBits, width);
@@ -95,149 +98,149 @@ final class Vp8LTransforms {
         }
     }
 
-    private static void applyPredictor0(byte[] d, int start, int end) {
+    private static void applyPredictor0(ByteBuffer d, int start, int end) {
         for (int i = start + 3; i < end; i += 4) {
-            d[i] = (byte) (d[i] + (byte) 0xFF);
+            d.put(i, (byte) (d.get(i) + (byte) 0xFF));
         }
     }
 
-    private static void applyPredictor1(byte[] d, int start, int end, int width) {
+    private static void applyPredictor1(ByteBuffer d, int start, int end, int width) {
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + d[i - 4]);
+            d.put(i, (byte) (d.get(i) + d.get(i - 4)));
         }
     }
 
-    private static void applyPredictor2(byte[] d, int start, int end, int width) {
+    private static void applyPredictor2(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + d[i - stride]);
+            d.put(i, (byte) (d.get(i) + d.get(i - stride)));
         }
     }
 
-    private static void applyPredictor3(byte[] d, int start, int end, int width) {
+    private static void applyPredictor3(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + d[i - stride + 4]);
+            d.put(i, (byte) (d.get(i) + d.get(i - stride + 4)));
         }
     }
 
-    private static void applyPredictor4(byte[] d, int start, int end, int width) {
+    private static void applyPredictor4(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + d[i - stride - 4]);
+            d.put(i, (byte) (d.get(i) + d.get(i - stride - 4)));
         }
     }
 
-    private static void applyPredictor5(byte[] d, int start, int end, int width) {
+    private static void applyPredictor5(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
-        byte pr = d[start - 4];
-        byte pg = d[start - 3];
-        byte pb = d[start - 2];
-        byte pa = d[start - 1];
+        byte pr = d.get(start - 4);
+        byte pg = d.get(start - 3);
+        byte pb = d.get(start - 2);
+        byte pa = d.get(start - 1);
 
         for (int i = start; i < end; i += 4) {
             int trOff = i - stride + 4;
             int tOff = i - stride;
 
-            pr = (byte) (d[i] + average2Auto(average2Auto(pr, d[trOff]), d[tOff]));
-            pg = (byte) (d[i + 1] + average2Auto(average2Auto(pg, d[trOff + 1]), d[tOff + 1]));
-            pb = (byte) (d[i + 2] + average2Auto(average2Auto(pb, d[trOff + 2]), d[tOff + 2]));
-            pa = (byte) (d[i + 3] + average2Auto(average2Auto(pa, d[trOff + 3]), d[tOff + 3]));
+            pr = (byte) (d.get(i) + average2Auto(average2Auto(pr, d.get(trOff)), d.get(tOff)));
+            pg = (byte) (d.get(i + 1) + average2Auto(average2Auto(pg, d.get(trOff + 1)), d.get(tOff + 1)));
+            pb = (byte) (d.get(i + 2) + average2Auto(average2Auto(pb, d.get(trOff + 2)), d.get(tOff + 2)));
+            pa = (byte) (d.get(i + 3) + average2Auto(average2Auto(pa, d.get(trOff + 3)), d.get(tOff + 3)));
 
-            d[i] = pr;
-            d[i + 1] = pg;
-            d[i + 2] = pb;
-            d[i + 3] = pa;
+            d.put(i, pr);
+            d.put(i + 1, pg);
+            d.put(i + 2, pb);
+            d.put(i + 3, pa);
         }
     }
 
-    private static void applyPredictor6(byte[] d, int start, int end, int width) {
+    private static void applyPredictor6(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + average2(d[i - 4], d[i - stride - 4]));
+            d.put(i, (byte) (d.get(i) + average2(d.get(i - 4), d.get(i - stride - 4))));
         }
     }
 
-    private static void applyPredictor7(byte[] d, int start, int end, int width) {
+    private static void applyPredictor7(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
 
-        byte pr = d[start - 4];
-        byte pg = d[start - 3];
-        byte pb = d[start - 2];
-        byte pa = d[start - 1];
+        byte pr = d.get(start - 4);
+        byte pg = d.get(start - 3);
+        byte pb = d.get(start - 2);
+        byte pa = d.get(start - 1);
 
         for (int i = start; i < end; i += 4) {
             int tOff = i - stride;
 
-            pr = (byte) (d[i] + average2Auto(pr, d[tOff]));
-            pg = (byte) (d[i + 1] + average2Auto(pg, d[tOff + 1]));
-            pb = (byte) (d[i + 2] + average2Auto(pb, d[tOff + 2]));
-            pa = (byte) (d[i + 3] + average2Auto(pa, d[tOff + 3]));
+            pr = (byte) (d.get(i) + average2Auto(pr, d.get(tOff)));
+            pg = (byte) (d.get(i + 1) + average2Auto(pg, d.get(tOff + 1)));
+            pb = (byte) (d.get(i + 2) + average2Auto(pb, d.get(tOff + 2)));
+            pa = (byte) (d.get(i + 3) + average2Auto(pa, d.get(tOff + 3)));
 
-            d[i] = pr;
-            d[i + 1] = pg;
-            d[i + 2] = pb;
-            d[i + 3] = pa;
+            d.put(i, pr);
+            d.put(i + 1, pg);
+            d.put(i + 2, pb);
+            d.put(i + 3, pa);
         }
     }
 
-    private static void applyPredictor8(byte[] d, int start, int end, int width) {
+    private static void applyPredictor8(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + average2(d[i - stride - 4], d[i - stride]));
+            d.put(i, (byte) (d.get(i) + average2(d.get(i - stride - 4), d.get(i - stride))));
         }
     }
 
-    private static void applyPredictor9(byte[] d, int start, int end, int width) {
+    private static void applyPredictor9(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
         for (int i = start; i < end; i++) {
-            d[i] = (byte) (d[i] + average2(d[i - stride], d[i - stride + 4]));
+            d.put(i, (byte) (d.get(i) + average2(d.get(i - stride), d.get(i - stride + 4))));
         }
     }
 
-    private static void applyPredictor10(byte[] d, int start, int end, int width) {
+    private static void applyPredictor10(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
 
-        byte pr = d[start - 4];
-        byte pg = d[start - 3];
-        byte pb = d[start - 2];
-        byte pa = d[start - 1];
+        byte pr = d.get(start - 4);
+        byte pg = d.get(start - 3);
+        byte pb = d.get(start - 2);
+        byte pa = d.get(start - 1);
 
         for (int i = start; i < end; i += 4) {
             int tlOff = i - stride - 4;
             int tOff = i - stride;
             int trOff = i - stride + 4;
 
-            pr = (byte) (d[i] + average2(average2(pr, d[tlOff]), average2(d[tOff], d[trOff])));
-            pg = (byte) (d[i + 1] + average2(average2(pg, d[tlOff + 1]), average2(d[tOff + 1], d[trOff + 1])));
-            pb = (byte) (d[i + 2] + average2(average2(pb, d[tlOff + 2]), average2(d[tOff + 2], d[trOff + 2])));
-            pa = (byte) (d[i + 3] + average2(average2(pa, d[tlOff + 3]), average2(d[tOff + 3], d[trOff + 3])));
+            pr = (byte) (d.get(i) + average2(average2(pr, d.get(tlOff)), average2(d.get(tOff), d.get(trOff))));
+            pg = (byte) (d.get(i + 1) + average2(average2(pg, d.get(tlOff + 1)), average2(d.get(tOff + 1), d.get(trOff + 1))));
+            pb = (byte) (d.get(i + 2) + average2(average2(pb, d.get(tlOff + 2)), average2(d.get(tOff + 2), d.get(trOff + 2))));
+            pa = (byte) (d.get(i + 3) + average2(average2(pa, d.get(tlOff + 3)), average2(d.get(tOff + 3), d.get(trOff + 3))));
 
-            d[i] = pr;
-            d[i + 1] = pg;
-            d[i + 2] = pb;
-            d[i + 3] = pa;
+            d.put(i, pr);
+            d.put(i + 1, pg);
+            d.put(i + 2, pb);
+            d.put(i + 3, pa);
         }
     }
 
-    private static void applyPredictor11(byte[] d, int start, int end, int width) {
+    private static void applyPredictor11(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
 
-        int l0 = d[start - 4] & 0xFF;
-        int l1 = d[start - 3] & 0xFF;
-        int l2 = d[start - 2] & 0xFF;
-        int l3 = d[start - 1] & 0xFF;
+        int l0 = d.get(start - 4) & 0xFF;
+        int l1 = d.get(start - 3) & 0xFF;
+        int l2 = d.get(start - 2) & 0xFF;
+        int l3 = d.get(start - 1) & 0xFF;
 
-        int tl0 = d[start - stride - 4] & 0xFF;
-        int tl1 = d[start - stride - 3] & 0xFF;
-        int tl2 = d[start - stride - 2] & 0xFF;
-        int tl3 = d[start - stride - 1] & 0xFF;
+        int tl0 = d.get(start - stride - 4) & 0xFF;
+        int tl1 = d.get(start - stride - 3) & 0xFF;
+        int tl2 = d.get(start - stride - 2) & 0xFF;
+        int tl3 = d.get(start - stride - 1) & 0xFF;
 
         for (int i = start; i < end; i += 4) {
-            int t0 = d[i - stride] & 0xFF;
-            int t1 = d[i - stride + 1] & 0xFF;
-            int t2 = d[i - stride + 2] & 0xFF;
-            int t3 = d[i - stride + 3] & 0xFF;
+            int t0 = d.get(i - stride) & 0xFF;
+            int t1 = d.get(i - stride + 1) & 0xFF;
+            int t2 = d.get(i - stride + 2) & 0xFF;
+            int t3 = d.get(i - stride + 3) & 0xFF;
 
             int predictLeft = 0;
             int predictTop = 0;
@@ -260,15 +263,15 @@ final class Vp8LTransforms {
             predictTop += Math.abs(p - t3);
 
             if (predictLeft < predictTop) {
-                d[i] = (byte) (d[i] + (byte) l0);
-                d[i + 1] = (byte) (d[i + 1] + (byte) l1);
-                d[i + 2] = (byte) (d[i + 2] + (byte) l2);
-                d[i + 3] = (byte) (d[i + 3] + (byte) l3);
+                d.put(i, (byte) (d.get(i) + (byte) l0));
+                d.put(i + 1, (byte) (d.get(i + 1) + (byte) l1));
+                d.put(i + 2, (byte) (d.get(i + 2) + (byte) l2));
+                d.put(i + 3, (byte) (d.get(i + 3) + (byte) l3));
             } else {
-                d[i] = (byte) (d[i] + (byte) t0);
-                d[i + 1] = (byte) (d[i + 1] + (byte) t1);
-                d[i + 2] = (byte) (d[i + 2] + (byte) t2);
-                d[i + 3] = (byte) (d[i + 3] + (byte) t3);
+                d.put(i, (byte) (d.get(i) + (byte) t0));
+                d.put(i + 1, (byte) (d.get(i + 1) + (byte) t1));
+                d.put(i + 2, (byte) (d.get(i + 2) + (byte) t2));
+                d.put(i + 3, (byte) (d.get(i + 3) + (byte) t3));
             }
 
             tl0 = t0;
@@ -276,62 +279,62 @@ final class Vp8LTransforms {
             tl2 = t2;
             tl3 = t3;
 
-            l0 = d[i] & 0xFF;
-            l1 = d[i + 1] & 0xFF;
-            l2 = d[i + 2] & 0xFF;
-            l3 = d[i + 3] & 0xFF;
+            l0 = d.get(i) & 0xFF;
+            l1 = d.get(i + 1) & 0xFF;
+            l2 = d.get(i + 2) & 0xFF;
+            l3 = d.get(i + 3) & 0xFF;
         }
     }
 
-    private static void applyPredictor12(byte[] d, int start, int end, int width) {
+    private static void applyPredictor12(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
 
-        byte pr = d[start - 4];
-        byte pg = d[start - 3];
-        byte pb = d[start - 2];
-        byte pa = d[start - 1];
+        byte pr = d.get(start - 4);
+        byte pg = d.get(start - 3);
+        byte pb = d.get(start - 2);
+        byte pa = d.get(start - 1);
 
         for (int i = start; i < end; i += 4) {
             int tlOff = i - stride - 4;
             int tOff = i - stride;
 
-            pr = (byte) (d[i] + clampAddSubtractFull(pr, d[tOff], d[tlOff]));
-            pg = (byte) (d[i + 1] + clampAddSubtractFull(pg, d[tOff + 1], d[tlOff + 1]));
-            pb = (byte) (d[i + 2] + clampAddSubtractFull(pb, d[tOff + 2], d[tlOff + 2]));
-            pa = (byte) (d[i + 3] + clampAddSubtractFull(pa, d[tOff + 3], d[tlOff + 3]));
+            pr = (byte) (d.get(i) + clampAddSubtractFull(pr, d.get(tOff), d.get(tlOff)));
+            pg = (byte) (d.get(i + 1) + clampAddSubtractFull(pg, d.get(tOff + 1), d.get(tlOff + 1)));
+            pb = (byte) (d.get(i + 2) + clampAddSubtractFull(pb, d.get(tOff + 2), d.get(tlOff + 2)));
+            pa = (byte) (d.get(i + 3) + clampAddSubtractFull(pa, d.get(tOff + 3), d.get(tlOff + 3)));
 
-            d[i] = pr;
-            d[i + 1] = pg;
-            d[i + 2] = pb;
-            d[i + 3] = pa;
+            d.put(i, pr);
+            d.put(i + 1, pg);
+            d.put(i + 2, pb);
+            d.put(i + 3, pa);
         }
     }
 
-    private static void applyPredictor13(byte[] d, int start, int end, int width) {
+    private static void applyPredictor13(ByteBuffer d, int start, int end, int width) {
         int stride = width * 4;
 
-        byte pr = d[start - 4];
-        byte pg = d[start - 3];
-        byte pb = d[start - 2];
-        byte pa = d[start - 1];
+        byte pr = d.get(start - 4);
+        byte pg = d.get(start - 3);
+        byte pb = d.get(start - 2);
+        byte pa = d.get(start - 1);
 
         for (int i = start; i < end; i += 4) {
             int tlOff = i - stride - 4;
             int tOff = i - stride;
 
-            pr = (byte) (d[i] + clampAddSubtractHalf(((pr & 0xFF) + (d[tOff] & 0xFF)) / 2, d[tlOff]));
-            pg = (byte) (d[i + 1] + clampAddSubtractHalf(((pg & 0xFF) + (d[tOff + 1] & 0xFF)) / 2, d[tlOff + 1]));
-            pb = (byte) (d[i + 2] + clampAddSubtractHalf(((pb & 0xFF) + (d[tOff + 2] & 0xFF)) / 2, d[tlOff + 2]));
-            pa = (byte) (d[i + 3] + clampAddSubtractHalf(((pa & 0xFF) + (d[tOff + 3] & 0xFF)) / 2, d[tlOff + 3]));
+            pr = (byte) (d.get(i) + clampAddSubtractHalf(((pr & 0xFF) + (d.get(tOff) & 0xFF)) / 2, d.get(tlOff)));
+            pg = (byte) (d.get(i + 1) + clampAddSubtractHalf(((pg & 0xFF) + (d.get(tOff + 1) & 0xFF)) / 2, d.get(tlOff + 1)));
+            pb = (byte) (d.get(i + 2) + clampAddSubtractHalf(((pb & 0xFF) + (d.get(tOff + 2) & 0xFF)) / 2, d.get(tlOff + 2)));
+            pa = (byte) (d.get(i + 3) + clampAddSubtractHalf(((pa & 0xFF) + (d.get(tOff + 3) & 0xFF)) / 2, d.get(tlOff + 3)));
 
-            d[i] = pr;
-            d[i + 1] = pg;
-            d[i + 2] = pb;
-            d[i + 3] = pa;
+            d.put(i, pr);
+            d.put(i + 1, pg);
+            d.put(i + 2, pb);
+            d.put(i + 3, pa);
         }
     }
 
-    static void applyColorTransform(byte[] imageData, int width, int height, int sizeBits, byte[] transformData) {
+    static void applyColorTransform(ByteBuffer imageData, int width, int height, int sizeBits, ByteBuffer transformData) {
         int blockXsize = subsampleSize(width, sizeBits);
 
         for (int y = 0; y < height; y++) {
@@ -340,43 +343,44 @@ final class Vp8LTransforms {
 
             for (int blockX = 0; blockX < blockXsize; blockX++) {
                 int tfOff = tfRowOff + blockX * 4;
-                byte redToBlue = transformData[tfOff];
-                byte greenToBlue = transformData[tfOff + 1];
-                byte greenToRed = transformData[tfOff + 2];
+                byte redToBlue = transformData.get(tfOff);
+                byte greenToBlue = transformData.get(tfOff + 1);
+                byte greenToRed = transformData.get(tfOff + 2);
 
                 int startX = blockX << sizeBits;
                 int endX = Math.min((blockX + 1) << sizeBits, width);
 
                 for (int x = startX; x < endX; x++) {
                     int p = rowOff + x * 4;
-                    int green = imageData[p + 1] & 0xFF;
-                    int tempRed = imageData[p] & 0xFF;
-                    int tempBlue = imageData[p + 2] & 0xFF;
+                    int green = imageData.get(p + 1) & 0xFF;
+                    int tempRed = imageData.get(p) & 0xFF;
+                    int tempBlue = imageData.get(p + 2) & 0xFF;
 
                     tempRed = (tempRed + colorTransformDelta(greenToRed, (byte) green)) & 0xFF;
                     tempBlue = (tempBlue + colorTransformDelta(greenToBlue, (byte) green)) & 0xFF;
                     tempBlue = (tempBlue + colorTransformDelta(redToBlue, (byte) tempRed)) & 0xFF;
 
-                    imageData[p] = (byte) tempRed;
-                    imageData[p + 2] = (byte) tempBlue;
+                    imageData.put(p, (byte) tempRed);
+                    imageData.put(p + 2, (byte) tempBlue);
                 }
             }
         }
     }
 
-    static void applySubtractGreenTransform(byte[] imageData, int imageSize) {
+    static void applySubtractGreenTransform(ByteBuffer imageData, int imageSize) {
         for (int i = 0; i < imageSize; i += 4) {
-            imageData[i] = (byte) (imageData[i] + imageData[i + 1]);
-            imageData[i + 2] = (byte) (imageData[i + 2] + imageData[i + 1]);
+            byte g = imageData.get(i + 1);
+            imageData.put(i, (byte) (imageData.get(i) + g));
+            imageData.put(i + 2, (byte) (imageData.get(i + 2) + g));
         }
     }
 
     static void applyColorIndexingTransform(
-            byte[] imageData,
+            ByteBuffer imageData,
             int width,
             int height,
             int tableSize,
-            byte[] tableData
+            ByteBuffer tableData
     ) {
         if (tableSize <= 0) {
             return;
@@ -386,18 +390,18 @@ final class Vp8LTransforms {
             // index is in G channel
             for (int p = 0; p < width * height; p++) {
                 int off = p * 4;
-                int idx = imageData[off + 1] & 0xFF;
+                int idx = imageData.get(off + 1) & 0xFF;
                 if (idx < tableSize) {
                     int t = idx * 4;
-                    imageData[off] = tableData[t];
-                    imageData[off + 1] = tableData[t + 1];
-                    imageData[off + 2] = tableData[t + 2];
-                    imageData[off + 3] = tableData[t + 3];
+                    imageData.put(off, tableData.get(t));
+                    imageData.put(off + 1, tableData.get(t + 1));
+                    imageData.put(off + 2, tableData.get(t + 2));
+                    imageData.put(off + 3, tableData.get(t + 3));
                 } else {
-                    imageData[off] = 0;
-                    imageData[off + 1] = 0;
-                    imageData[off + 2] = 0;
-                    imageData[off + 3] = 0;
+                    imageData.put(off, (byte) 0);
+                    imageData.put(off + 1, (byte) 0);
+                    imageData.put(off + 2, (byte) 0);
+                    imageData.put(off + 3, (byte) 0);
                 }
             }
             return;
@@ -422,7 +426,7 @@ final class Vp8LTransforms {
         for (int y = height - 1; y >= 0; y--) {
             int packedRowOff = y * packedWidth * 4;
             for (int bx = 0; bx < packedWidth; bx++) {
-                packedRow[bx] = imageData[packedRowOff + bx * 4 + 1];
+                packedRow[bx] = imageData.get(packedRowOff + bx * 4 + 1);
             }
 
             int outRowOff = y * width * 4;
@@ -434,15 +438,15 @@ final class Vp8LTransforms {
                     int outOff = outRowOff + outX * 4;
                     if (idx < tableSize) {
                         int t = idx * 4;
-                        imageData[outOff] = tableData[t];
-                        imageData[outOff + 1] = tableData[t + 1];
-                        imageData[outOff + 2] = tableData[t + 2];
-                        imageData[outOff + 3] = tableData[t + 3];
+                        imageData.put(outOff, tableData.get(t));
+                        imageData.put(outOff + 1, tableData.get(t + 1));
+                        imageData.put(outOff + 2, tableData.get(t + 2));
+                        imageData.put(outOff + 3, tableData.get(t + 3));
                     } else {
-                        imageData[outOff] = 0;
-                        imageData[outOff + 1] = 0;
-                        imageData[outOff + 2] = 0;
-                        imageData[outOff + 3] = 0;
+                        imageData.put(outOff, (byte) 0);
+                        imageData.put(outOff + 1, (byte) 0);
+                        imageData.put(outOff + 2, (byte) 0);
+                        imageData.put(outOff + 3, (byte) 0);
                     }
                     outX++;
                 }

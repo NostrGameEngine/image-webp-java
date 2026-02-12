@@ -1,10 +1,12 @@
 package io.github.imagewebp.decoder;
 
+import java.nio.ByteBuffer;
+
 /** Predictor functions used by ALPH filtering. */
 final class AlphaPredictor {
     private AlphaPredictor() {}
 
-    static int predict(int x, int y, int width, int filteringMethod, byte[] rgba) {
+    static int predict(int x, int y, int width, int filteringMethod, ByteBuffer rgba) {
         // filteringMethod: 0 None, 1 Horizontal, 2 Vertical, 3 Gradient
         switch (filteringMethod) {
             case 0:
@@ -20,43 +22,47 @@ final class AlphaPredictor {
         }
     }
 
-    private static int horizontal(int x, int y, int width, byte[] rgba) {
+    private static int alphaAt(ByteBuffer rgba, int pixelIndex) {
+        return rgba.get(pixelIndex * 4 + 3) & 0xFF;
+    }
+
+    private static int horizontal(int x, int y, int width, ByteBuffer rgba) {
         if (x == 0 && y == 0) return 0;
         if (x == 0) {
             int above = (y - 1) * width + x;
-            return rgba[above * 4 + 3] & 0xFF;
+            return alphaAt(rgba, above);
         }
         int left = y * width + (x - 1);
-        return rgba[left * 4 + 3] & 0xFF;
+        return alphaAt(rgba, left);
     }
 
-    private static int vertical(int x, int y, int width, byte[] rgba) {
+    private static int vertical(int x, int y, int width, ByteBuffer rgba) {
         if (x == 0 && y == 0) return 0;
         if (y == 0) {
             int left = y * width + (x - 1);
-            return rgba[left * 4 + 3] & 0xFF;
+            return alphaAt(rgba, left);
         }
         int above = (y - 1) * width + x;
-        return rgba[above * 4 + 3] & 0xFF;
+        return alphaAt(rgba, above);
     }
 
-    private static int gradient(int x, int y, int width, byte[] rgba) {
+    private static int gradient(int x, int y, int width, ByteBuffer rgba) {
         int left, top, topLeft;
         if (x == 0 && y == 0) {
             left = top = topLeft = 0;
         } else if (x == 0) {
             int above = (y - 1) * width + x;
-            left = top = topLeft = rgba[above * 4 + 3] & 0xFF;
+            left = top = topLeft = alphaAt(rgba, above);
         } else if (y == 0) {
             int l = y * width + (x - 1);
-            left = top = topLeft = rgba[l * 4 + 3] & 0xFF;
+            left = top = topLeft = alphaAt(rgba, l);
         } else {
             int l = y * width + (x - 1);
             int t = (y - 1) * width + x;
             int tl = (y - 1) * width + (x - 1);
-            left = rgba[l * 4 + 3] & 0xFF;
-            top = rgba[t * 4 + 3] & 0xFF;
-            topLeft = rgba[tl * 4 + 3] & 0xFF;
+            left = alphaAt(rgba, l);
+            top = alphaAt(rgba, t);
+            topLeft = alphaAt(rgba, tl);
         }
 
         int comb = left + top - topLeft;
